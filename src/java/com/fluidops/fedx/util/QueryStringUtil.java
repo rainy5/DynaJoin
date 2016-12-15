@@ -218,7 +218,7 @@ public class QueryStringUtil
 
     StringBuilder res = new StringBuilder();
 
-    res.append("SELECT count(*) ");
+    res.append("SELECT (count(*) AS ?count)");
 
     res.append(" WHERE { ").append(s);
 
@@ -264,7 +264,7 @@ public class QueryStringUtil
 
     StringBuilder res = new StringBuilder();
 
-    res.append("SELECT count(*) ");
+    res.append("SELECT ( count(*) AS ?count)");
 
     res.append(" WHERE { ").append(s);
 
@@ -285,7 +285,7 @@ public class QueryStringUtil
     varNames = project(group, varNames);
 
     StringBuilder res = new StringBuilder();
-    res.append("SELECT count(*) ");
+    res.append("SELECT (count(*) AS ?count)");
 
     res.append(" WHERE { ").append(sb);
 
@@ -338,7 +338,7 @@ public class QueryStringUtil
     varNames = project(group, varNames);
 
     StringBuilder res = new StringBuilder();
-    res.append("SELECT count(*) ");
+    res.append("SELECT (count(*) AS ?count)");
 
     res.append(" WHERE { ").append(sb);
 

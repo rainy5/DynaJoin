@@ -94,7 +94,8 @@ public class FedXConnection extends SailConnectionBase {
 			try {
 				String queryString = getOriginalQueryString(bindings);
 				if (queryString==null)
-					logger.warn("Query string is null. Please check your FedX setup.");
+					//logger.warn("Query string is null. Please check your FedX setup.");
+                                    log.warn("Query string is null. Please check your FedX setup.");
 				QueryInfo queryInfo = new QueryInfo(queryString, getOriginalQueryType(bindings));
 				FederationManager.getMonitoringService().monitorQuery(queryInfo);
 				query = Optimizer.optimize(query, dataset, bindings, strategy, queryInfo);

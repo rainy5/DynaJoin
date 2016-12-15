@@ -5,7 +5,6 @@
 package jp.dbcls.federated;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,12 +24,12 @@ public class QueryServlet extends HttpServlet
 
   public void init()
     throws ServletException
-  {
+  {   
     super.init();
     String[] args = new String[5];
     args[0] = "-logtofile";
     args[1] = "-d";
-    args[2] = "bio2rdf3.ttl";
+    args[2] = "default5.ttl";
     args[3] = "-f";
     args[4] = "STDOUT";
     this.myService = new SPARQLService();
@@ -47,7 +46,7 @@ public class QueryServlet extends HttpServlet
     throws ServletException, IOException, QueryEvaluationException, RepositoryException
   {
     String query = request.getParameter("query");
-
+    //String query = "ASK {?s ?p ?o}"
     List res = this.myService.runQuery(query, 0);
 
     response.setContentType("text/html;charset=UTF-8");
@@ -57,7 +56,7 @@ public class QueryServlet extends HttpServlet
     out.println("<html>");
     out.println("<head>");
     out.println("<meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/>");
-    out.println("<title>Bio2RDF Federated query</title>");
+    out.println("<title>Federated query</title>");
 
     out.println("</head>");
     out.println("<body>");
@@ -79,7 +78,7 @@ public class QueryServlet extends HttpServlet
 
     out.println("<p/>");
 
-    out.println("<a href=\"/bio2RDF/\">return</a>");
+    out.println("<a href=\"/dynajoin/\">return to the query page</a>");
 
     out.println("</body>");
 
