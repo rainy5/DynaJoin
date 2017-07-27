@@ -26,14 +26,6 @@ public class QueryServlet extends HttpServlet
     throws ServletException
   {   
     super.init();
-    String[] args = new String[5];
-    args[0] = "-logtofile";
-    args[1] = "-d";
-    args[2] = "default5.ttl";
-    args[3] = "-f";
-    args[4] = "STDOUT";
-    this.myService = new SPARQLService();
-    this.myService.run(args);
   }
 
   public void destory()
@@ -45,8 +37,15 @@ public class QueryServlet extends HttpServlet
   protected void processRequest(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException, QueryEvaluationException, RepositoryException
   {
+    String[] args = new String[5];
+    args[0] = "-logtofile";
+    args[1] = "-d";
+    args[2] = "default5.ttl";
+    args[3] = "-f";
+    args[4] = "STDOUT";
+    this.myService = new SPARQLService();
+    this.myService.run(args);
     String query = request.getParameter("query");
-    //String query = "ASK {?s ?p ?o}"
     List res = this.myService.runQuery(query, 0);
 
     response.setContentType("text/html;charset=UTF-8");
