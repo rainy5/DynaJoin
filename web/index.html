@@ -6,7 +6,7 @@ and open the template in the editor.
 -->
 <html>
     <head>
-        <title>Bio2RDF federated query</title>
+        <title>federated query</title>
         <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
        <link rel="stylesheet"  href="styles.css" />
         <script>
@@ -43,56 +43,12 @@ and open the template in the editor.
                 <button id="submit" type= "submit" name="submit"> Submit Query </button>
              </form>
         </div>
-
-
-  <div id="endpointlist">
-  <h3>The endpoint list</h3>
-
- <ol type="1">
- <li> <a href=" http://cu.affymetrix.bio2rdf.org/sparql">Affymetrix probesets [affymetrix]  </a> </li>
-<li> <a href=" http://cu.biomodels.bio2rdf.org/sparql"> A Database of Annotated Published Models [biomodels] </a> </li>
-<li> <a href=" http://cu.bioportal.bio2rdf.org/sparql">  BioPortal [bioportal]</a> </li>
-<li> <a href=" http://cu.chembl.bio2rdf.org/sparql">chEMBL [chembl]  </a> </li>
-<li> <a href=" http://cu.clinicaltrials.bio2rdf.org/sparql"> ClinicalTrials.gov [clinicaltrials] </a> </li>
-<li> <a href=" http://cu.ctd.bio2rdf.org/sparql">Comparative Toxicogenomics Database [ctd]  </a> </li>
-<li> <a href=" http://cu.dbsnp.bio2rdf.org/sparql">Database of single nucleotide polymorphism [dbsnp]  </a> </li>
-<li> <a href=" http://cu.drugbank.bio2rdf.org/sparql"> DrugBank [drugbank] </a> </li>
-<li> <a href=" http://cu.genage.bio2rdf.org/sparql"> GenAge: The Ageing Gene Database [genage]  </a> </li>
-<li> <a href=" http://cu.gendr.bio2rdf.org/sparql"> GenDR: The Dietary Restriction Gene Database [gendr]  </a> </li>
-<li> <a href=" http://cu.goa.bio2rdf.org/sparql"> Gene Ontology Annotation [goa]  </a> </li>
-<li> <a href=" http://cu.hgnc.bio2rdf.org/sparql">HUGO Gene Nomenclature Committee [hgnc]  </a> </li>
-<li> <a href=" http://cu.homologene.bio2rdf.org/sparql">NCBI Homologene [homologene]  </a> </li>
-<li> <a href=" http://cu.interpro.bio2rdf.org/sparql">Integrated resource of protein families, domains and functional sites [interpro]  </a> </li>
-<li> <a href=" http://cu.iproclass.bio2rdf.org/sparql">Integrated Protein Knowledgebase [iproclass]  </a> </li>
-<li> <a href=" http://cu.irefindex.bio2rdf.org/sparql">Interaction Reference Index [irefindex]  </a> </li>
-<li> <a href=" http://cu.kegg.bio2rdf.org/sparql"> Kyoto Encyclopedia of Genes and Genomes [kegg] </a> </li>
-<li> <a href=" http://cu.linkedspl.bio2rdf.org/sparql"> Linked Structured Product Label [linkedspl] </a> </li>
-<li> <a href=" http://cu.lsr.bio2rdf.org/sparql">  The Life Science Resource Registry [lsr] </a> </li>
-<li> <a href=" http://cu.mesh.bio2rdf.org/sparql"> Medical Subject Headings [mesh] </a>  </li>
-<li> <a href=" http://cu.mgi.bio2rdf.org/sparql"> Mouse genome database (MGD) from Mouse Genome Informatics (MGI) [mgi]  </a> </li>
-<li> <a href=" http://cu.ncbigene.bio2rdf.org/sparql">NCBI Gene [ncbigene]  </a> </li>
-<li> <a href=" http://cu.ndc.bio2rdf.org/sparql"> National Drug Code Directory [ndc] </a> </li>
-<li> <a href=" http://cu.omim.bio2rdf.org/sparql"> Online Mendelian Inheritance in Man [omim] </a> </li>
-<li> <a href=" http://cu.orphanet.bio2rdf.org/sparql">Orphanet; a database dedicated to information on rare diseases and orphan drugs [orphanet]  </a> </li>
-<li> <a href=" http://cu.pathwaycommons.bio2rdf.org/sparql"> Pathway Commons [pathwaycommons]  </a> </li>
-<li> <a href=" http://cu.pharmgkb.bio2rdf.org/sparql"> Pharmacogenomics Knowledge Base [pharmgkb]  </a> </li>
-<li> <a href=" http://cu.pubmed.bio2rdf.org/sparql"> PubMed [pubmed] </a> </li>
-<li> <a href=" http://cu.reactome.bio2rdf.org/sparql">Reactome - a curated knowledgebase of biological pathways [reactome]  </a> </li>
-<li> <a href=" http://cu.sabiork.bio2rdf.org/sparql"> SABIO-RK [sabiork] </a> </li>
-<li> <a href=" http://cu.sgd.bio2rdf.org/sparql">Saccharomyces Genome Database [sgd]  </a> </li>
-<li> <a href=" http://cu.sider.bio2rdf.org/sparql"> Side Effect Resource [sider] </a> </li>
-<li> <a href=" http://cu.taxonomy.bio2rdf.org/sparql">NCBI Taxonomy [taxonomy]  </a> </li>
-<li> <a href=" http://cu.wikipathways.bio2rdf.org/sparql">WikiPathways [wikipathways]  </a> </li>
-<li> <a href=" http://cu.wormbase.bio2rdf.org/sparql">WormBase [wormbase] </a> </li>
-    </ol>
-  </div>
-
    </div>
   <div id="right">
     <div id="example">
         <h3>Examples</h3>
-        <p>1. The genes related to diabetes. <a href="/bio2RDF/#" data-value=" select ?s1 ?o1 ?o2 where{ ?s1 &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.?s1   &lt;http://bio2rdf.org/omim_vocabulary:refers-to&gt; ?o1. ?o1   &lt;http://bio2rdf.org/omim_vocabulary:x-snomed&gt; ?o2.&lt;http://bio2rdf.org/pharmgkb:PA446359&gt; &lt;http://bio2rdf.org/pharmgkb_vocabulary:x-snomedct&gt; ?o2.}" onclick="showExample(this)"> (show) </a></p>
-        <p>2. The genes related to diabetes. <a href="/bio2RDF/#" data-value=" select ?s1 ?o1 ?o2 where{ ?s1 &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.?s1   ?p1 ?o1. ?o1   ?p2 ?o2.&lt;http://bio2rdf.org/pharmgkb:PA446359&gt; &lt;http://bio2rdf.org/pharmgkb_vocabulary:x-snomedct&gt; ?o2.}" onclick="showExample(this)"> (show) </a></p>
+        <p>1. The genes related to diabetes. <a href="/dynajoin/#" data-value=" select ?s1 ?o1 ?o2 where{ ?s1 &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.?s1   &lt;http://bio2rdf.org/omim_vocabulary:refers-to&gt; ?o1. ?o1   &lt;http://bio2rdf.org/omim_vocabulary:x-snomed&gt; ?o2.&lt;http://bio2rdf.org/pharmgkb:PA446359&gt; &lt;http://bio2rdf.org/pharmgkb_vocabulary:x-snomedct&gt; ?o2.}" onclick="showExample(this)"> (show) </a></p>
+        <p>2. The genes related to diabetes. <a href="/dynajoin/#" data-value=" select ?s1 ?o1 ?o2 where{ ?s1 &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.?s1   ?p1 ?o1. ?o1   ?p2 ?o2.&lt;http://bio2rdf.org/pharmgkb:PA446359&gt; &lt;http://bio2rdf.org/pharmgkb_vocabulary:x-snomedct&gt; ?o2.}" onclick="showExample(this)"> (show) </a></p>
     </div>
 
   </div>

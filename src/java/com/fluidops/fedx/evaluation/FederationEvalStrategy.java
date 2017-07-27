@@ -455,7 +455,8 @@ public abstract class FederationEvalStrategy extends EvaluationStrategyImpl
       result = endpoint.getTripleSource().getStatements(countQuery, endpoint.getConn(), QueryType.SELECT);
       BindingSet binding = (BindingSet)result.next();
       result.close();
-      value = Integer.parseInt(binding.getValue("callret-0").stringValue());
+      value = Integer.parseInt(binding.getValue("count").stringValue());
+      //value = Integer.parseInt(binding.getValue("callret-0").stringValue());
       return value;
     }
 
@@ -466,7 +467,7 @@ public abstract class FederationEvalStrategy extends EvaluationStrategyImpl
     if(result.hasNext()){
     while(result.hasNext()){
     BindingSet binding = (BindingSet)result.next();
-    String temp=binding.getValue("callret-0").stringValue();
+    String temp=binding.getValue("count").stringValue();
     if (temp.length()>9) 
     	 sum = sum+Integer.MAX_VALUE;
     else
