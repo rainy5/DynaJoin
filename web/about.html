@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>Bio2RDF federated query</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script type="text/javascript" src="http://www.francescomalagrino.com/BootstrapPageGenerator/3/js/jquery-2.0.0.min.js"></script>
+        <script type="text/javascript" src="http://www.francescomalagrino.com/BootstrapPageGenerator/3/js/jquery-ui"></script>
+        <link href="http://www.francescomalagrino.com/BootstrapPageGenerator/3/css/bootstrap-combined.min.css" rel="stylesheet" media="screen">
+        <script type="text/javascript" src="http://www.francescomalagrino.com/BootstrapPageGenerator/3/js/bootstrap.min.js"></script>
+        <script src="query.js"></script>
+        <link rel="stylesheet"  href="custom.css" />
+    </head>
+    <body>
+         <div class="row">
+
+            <div class="span12" >
+                <ul class="nav nav-pills" id="navi-setting" >
+                    <li >
+                        <a href="index.jsp">Home</a>
+                    </li>
+                    <li>
+                        <a href="documentation.html">Documentation</a>
+                    </li>
+                    <li>
+                        <a href="about.html">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div id="about">
+            <h1>About</h1>
+            <p>
+                <strong>DynaJoin</strong> is a federated SPARQL query system, to process SPARQL queries based on  distributed RDF data sources  via  SPARQL endpoints. 
+            </p>
+            <ul>
+            <li>utilizing intermediate results obtained during previous search to dynamically optimize SPARQL query join order </li>
+            <li>currently query the 35 datasets in the Bio2RDF projects
+            <li> implemented based on <a href="http://www.fluidops.com/en/company/training/open_source">FedX System </a></li>
+            <li>is open source <a href="https://github.com/rainy5/DynaJoin">github</a></li>
+            </ul>
+            
+        </div>
+    
+    </body>
+</html>

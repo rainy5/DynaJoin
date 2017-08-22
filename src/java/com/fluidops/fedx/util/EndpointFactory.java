@@ -180,7 +180,7 @@ public class EndpointFactory {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	public static List<Endpoint> loadFederationMembers(File dataConfig) throws FedXException  {
+	public static List<Endpoint> loadFederationMembers(File dataConfig) throws FedXException {
 		
 		if (!dataConfig.exists())
 			throw new FedXRuntimeException("File does not exist: " + dataConfig.getAbsolutePath());
@@ -197,18 +197,8 @@ public class EndpointFactory {
 		
 		List<Endpoint> res = new ArrayList<Endpoint>();
 		for (Statement st : graph.filter(null, new URIImpl("http://fluidops.org/config#store"), null)) {
-                    try{
 			Endpoint e = loadEndpoint(graph, st.getSubject(), st.getObject());
 			res.add(e);
-                    }
-                    //modified by hongyan wu
-                    catch (FedXException ecp){
-                        ecp.getStackTrace();
-                    }
-                   
-                    
-                        
-                             
 		}
 		
 		return res;

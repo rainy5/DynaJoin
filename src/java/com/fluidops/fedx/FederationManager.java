@@ -297,8 +297,7 @@ public class FederationManager {
 	 * 			 if the endpoint is not initialized, or if the federation has already a member with the
 	 *           same location	
 	 */
-        //modified by Hongyan Wu
-	public void addEndpoint(Endpoint e, boolean ...updateStrategy) {
+	public void addEndpoint(Endpoint e, boolean ...updateStrategy) throws FedXRuntimeException {
 		log.info("Adding endpoint " + e.getId() + " to federation ...");
 		
 		/* check if endpoint is initialized*/
@@ -306,21 +305,14 @@ public class FederationManager {
 			try	{
 				e.initialize();
 			} catch (RepositoryException e1){
-				try {throw new FedXRuntimeException("Provided endpoint was not initialized and could not be initialized: " + e1.getMessage(), e1);}
-                                catch(FedXRuntimeException e2){
-                                }
-                                
+				throw new FedXRuntimeException("Provided endpoint was not initialized and could not be initialized: " + e1.getMessage(), e1);
 			}
 		}
 		
 		/* check for duplicate before adding: heuristic => same location */
 		for (Endpoint member : federation.getMembers())
 			if (member.getEndpoint().equals(e.getEndpoint()))
-                            try {throw new FedXRuntimeException("Adding failed: there exists already an endpoint with location " + e.getEndpoint() + " (eid=" + member.getId() + ")");}
-                                catch(FedXRuntimeException e2){
-                                    e2.printStackTrace();
-                                }
-				
+				throw new FedXRuntimeException("Adding failed: there exists already an endpoint with location " + e.getEndpoint() + " (eid=" + member.getId() + ")");
 	
 		federation.addMember(e);
 		EndpointManager.getEndpointManager().addEndpoint(e);
