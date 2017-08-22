@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2008-2013, fluid Operations AG
- * Modified by Hongyan Wu@dbcls.rois
  *
  * FedX is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,51 +17,13 @@
 
 package com.fluidops.fedx.evaluation;
 
-import com.fluidops.fedx.EndpointManager;
-import com.fluidops.fedx.FedX;
-import com.fluidops.fedx.FederationManager;
-import com.fluidops.fedx.algebra.CheckStatementPattern;
-import com.fluidops.fedx.algebra.ConjunctiveFilterExpr;
-import com.fluidops.fedx.algebra.EmptyResult;
-import com.fluidops.fedx.algebra.ExclusiveGroup;
-import com.fluidops.fedx.algebra.ExclusiveStatement;
-import com.fluidops.fedx.algebra.FedXService;
-import com.fluidops.fedx.algebra.FedXStatementPattern;
-import com.fluidops.fedx.algebra.FilterExpr;
-import com.fluidops.fedx.algebra.IndependentJoinGroup;
-import com.fluidops.fedx.algebra.NJoin;
-import com.fluidops.fedx.algebra.NUnion;
-import com.fluidops.fedx.algebra.ProjectionWithBindings;
-import com.fluidops.fedx.algebra.SingleSourceQuery;
-import com.fluidops.fedx.algebra.StatementSource;
-import com.fluidops.fedx.algebra.StatementSourcePattern;
-import com.fluidops.fedx.algebra.StatementTupleExpr;
-import com.fluidops.fedx.cache.Cache;
-import com.fluidops.fedx.cache.CacheUtils;
-import com.fluidops.fedx.evaluation.concurrent.ControlledWorkerScheduler;
-import com.fluidops.fedx.evaluation.concurrent.ParallelServiceExecutor;
-import com.fluidops.fedx.evaluation.iterator.QueryResultIter;
-import com.fluidops.fedx.evaluation.union.ControlledWorkerUnion;
-import com.fluidops.fedx.evaluation.union.ParallelGetStatementsTask;
-import com.fluidops.fedx.evaluation.union.ParallelPreparedAlgebraUnionTask;
-import com.fluidops.fedx.evaluation.union.ParallelPreparedUnionTask;
-import com.fluidops.fedx.evaluation.union.ParallelUnionOperatorTask;
-import com.fluidops.fedx.evaluation.union.SynchronousWorkerUnion;
-import com.fluidops.fedx.evaluation.union.WorkerUnionBase;
-import com.fluidops.fedx.exception.FedXRuntimeException;
-import com.fluidops.fedx.exception.IllegalQueryException;
-import com.fluidops.fedx.statistics.Statistics;
-import com.fluidops.fedx.structures.Endpoint;
-import com.fluidops.fedx.structures.QueryInfo;
-import com.fluidops.fedx.structures.QueryType;
-import com.fluidops.fedx.util.QueryStringUtil;
 import info.aduna.iteration.CloseableIteration;
 import info.aduna.iteration.EmptyIteration;
 import info.aduna.iteration.SingletonIteration;
-import java.io.PrintStream;
-import java.util.ArrayList;
+
 import java.util.List;
 import java.util.concurrent.Executor;
+
 import org.apache.log4j.Logger;
 import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
@@ -76,6 +37,7 @@ import org.openrdf.query.Binding;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.MalformedQueryException;
 import org.openrdf.query.QueryEvaluationException;
+import org.openrdf.query.algebra.Projection;
 import org.openrdf.query.algebra.TupleExpr;
 import org.openrdf.query.algebra.ValueExpr;
 import org.openrdf.query.algebra.evaluation.QueryBindingSet;
@@ -88,84 +50,149 @@ import org.openrdf.query.impl.EmptyBindingSet;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 
-public abstract class FederationEvalStrategy extends EvaluationStrategyImpl
-{
-  public static Logger log = Logger.getLogger(FederationEvalStrategy.class);
-  protected Executor executor;
-  protected Cache cache;
-  protected Statistics statistics;
-  private long optimizationEclipse = 0L;
+import com.fluidops.fedx.Config;
+import com.fluidops.fedx.EndpointManager;
+import com.fluidops.fedx.FederationManager;
+import com.fluidops.fedx.algebra.CheckStatementPattern;
+import com.fluidops.fedx.algebra.ConjunctiveFilterExpr;
+import com.fluidops.fedx.algebra.EmptyResult;
+import com.fluidops.fedx.algebra.ExclusiveGroup;
+import com.fluidops.fedx.algebra.FedXService;
+import com.fluidops.fedx.algebra.FilterExpr;
+import com.fluidops.fedx.algebra.IndependentJoinGroup;
+import com.fluidops.fedx.algebra.NJoin;
+import com.fluidops.fedx.algebra.NUnion;
+import com.fluidops.fedx.algebra.ProjectionWithBindings;
+import com.fluidops.fedx.algebra.SingleSourceQuery;
+import com.fluidops.fedx.algebra.StatementSource;
+import com.fluidops.fedx.algebra.StatementTupleExpr;
+import com.fluidops.fedx.cache.Cache;
+import com.fluidops.fedx.cache.CacheUtils;
+import com.fluidops.fedx.evaluation.concurrent.ControlledWorkerScheduler;
+import com.fluidops.fedx.evaluation.concurrent.ParallelServiceExecutor;
+import com.fluidops.fedx.evaluation.join.ControlledWorkerBoundJoin;
+import com.fluidops.fedx.evaluation.join.ControlledWorkerJoin;
+import com.fluidops.fedx.evaluation.join.SynchronousBoundJoin;
+import com.fluidops.fedx.evaluation.join.SynchronousJoin;
+import com.fluidops.fedx.evaluation.union.ControlledWorkerUnion;
+import com.fluidops.fedx.evaluation.union.ParallelGetStatementsTask;
+import com.fluidops.fedx.evaluation.union.ParallelPreparedAlgebraUnionTask;
+import com.fluidops.fedx.evaluation.union.ParallelPreparedUnionTask;
+import com.fluidops.fedx.evaluation.union.ParallelUnionOperatorTask;
+import com.fluidops.fedx.evaluation.union.SynchronousWorkerUnion;
+import com.fluidops.fedx.evaluation.union.WorkerUnionBase;
+import com.fluidops.fedx.exception.FedXRuntimeException;
+import com.fluidops.fedx.statistics.Statistics;
+import com.fluidops.fedx.structures.Endpoint;
+import com.fluidops.fedx.structures.QueryInfo;
 
 
-  public FederationEvalStrategy() {
-    super(new org.openrdf.query.algebra.evaluation.TripleSource()
-    {
-      public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(Resource subj, URI pred, Value obj, Resource[] contexts)
-        throws QueryEvaluationException
-      {
-        throw new FedXRuntimeException(
-          "Federation Strategy does not support org.openrdf.query.algebra.evaluation.TripleSource#getStatements. If you encounter this exception, please report it.");
-      }
+/**
+ * Base class for the Evaluation strategies.
+ * 
+ * @author Andreas Schwarte
+ * 
+ * @see SailFederationEvalStrategy
+ * @see SparqlFederationEvalStrategy
+ *
+ */
+public abstract class FederationEvalStrategy extends EvaluationStrategyImpl {
+	
+	public static Logger log = Logger.getLogger(FederationEvalStrategy.class);
+	
+	
+	protected Executor executor;
+	protected Cache cache;
+	protected Statistics statistics;
+	
+	public FederationEvalStrategy() {
+		super(new org.openrdf.query.algebra.evaluation.TripleSource() {
 
-      public ValueFactory getValueFactory()
-      {
-        return ValueFactoryImpl.getInstance();
-      }
-    });
-    this.executor = FederationManager.getInstance().getExecutor();
-    this.cache = FederationManager.getInstance().getCache();
-    this.statistics = FederationManager.getInstance().getStatistics();
-  }
-  public long getOptimizationTime() {
-    return this.optimizationEclipse;
-  }
+			@Override
+			public CloseableIteration<? extends Statement, QueryEvaluationException> getStatements(
+					Resource subj, URI pred, Value obj, Resource... contexts)
+					throws QueryEvaluationException	{
+				throw new FedXRuntimeException(
+						"Federation Strategy does not support org.openrdf.query.algebra.evaluation.TripleSource#getStatements." +
+						" If you encounter this exception, please report it.");
+			}
 
-  public CloseableIteration<BindingSet, QueryEvaluationException> evaluate(TupleExpr expr, BindingSet bindings)
-    throws QueryEvaluationException
-  {
-    if ((expr instanceof StatementTupleExpr)) {
-      return ((StatementTupleExpr)expr).evaluate(bindings);
-    }
+			@Override
+			public ValueFactory getValueFactory() {
+				return ValueFactoryImpl.getInstance();
+			}});	
+		this.executor = FederationManager.getInstance().getExecutor();
+		this.cache = FederationManager.getInstance().getCache();
+		this.statistics = FederationManager.getInstance().getStatistics();
+	}
 
-    if ((expr instanceof NJoin)) {
-      try {
-        return evaluateNJoin((NJoin)expr, bindings);
-      }
-      catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-
-    if ((expr instanceof NUnion)) {
-      return evaluateNaryUnion((NUnion)expr, bindings);
-    }
-
-    if ((expr instanceof ExclusiveGroup)) {
-      return ((ExclusiveGroup)expr).evaluate(bindings);
-    }
-
-    if ((expr instanceof SingleSourceQuery)) {
-      return evaluateSingleSourceQuery((SingleSourceQuery)expr, bindings);
-    }
-    if ((expr instanceof FedXService)) {
-      return evaluateService((FedXService)expr, bindings);
-    }
-
-    if ((expr instanceof ProjectionWithBindings)) {
-      return evaluateProjectionWithBindings((ProjectionWithBindings)expr, bindings);
-    }
-
-    if ((expr instanceof IndependentJoinGroup)) {
-      return evaluateIndependentJoinGroup((IndependentJoinGroup)expr, bindings);
-    }
-
-    if ((expr instanceof EmptyResult)) {
-      return new EmptyIteration();
-    }
-    return super.evaluate(expr, bindings);
-  }
-
-  public CloseableIteration<Statement, QueryEvaluationException> getStatements(QueryInfo queryInfo, Resource subj, URI pred, Value obj, Resource... contexts) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+	
+	@Override
+	public CloseableIteration<BindingSet, QueryEvaluationException> evaluate(
+			TupleExpr expr, BindingSet bindings)
+			throws QueryEvaluationException {
+		
+		if (expr instanceof StatementTupleExpr) {
+			return ((StatementTupleExpr)expr).evaluate(bindings);
+		}
+				
+		if (expr instanceof NJoin) {
+			return evaluateNJoin((NJoin)expr, bindings);
+		} 
+		
+		if (expr instanceof NUnion) {
+			return evaluateNaryUnion((NUnion)expr, bindings);
+		}
+		
+		if (expr instanceof ExclusiveGroup) {
+			return ((ExclusiveGroup)expr).evaluate(bindings);
+		}
+		
+		if (expr instanceof SingleSourceQuery)
+			return evaluateSingleSourceQuery((SingleSourceQuery)expr, bindings);
+			
+		if (expr instanceof FedXService) {
+			return evaluateService((FedXService)expr, bindings);
+		}
+		
+		if (expr instanceof ProjectionWithBindings) {
+			return evaluateProjectionWithBindings((ProjectionWithBindings)expr, bindings);
+		}
+		
+		if (expr instanceof IndependentJoinGroup) {
+			return evaluateIndependentJoinGroup((IndependentJoinGroup)expr, bindings);	// XXX
+		}
+		
+		if(expr instanceof EmptyResult)
+			return new EmptyIteration<BindingSet, QueryEvaluationException>();
+		
+		return super.evaluate(expr, bindings);
+	}
+	
+	
+	
+	
+	/**
+	 * Retrieve the statements matching the provided subject, predicate and object value from the 
+	 * federation members.<p>
+	 * 
+	 * For a bound statement, i.e. a statement with no free variables, the statement itself is 
+	 * returned if some member has this statement, an empty iteration otherwise.<p>
+	 * 
+	 * If the statement has free variables, i.e. one of the provided arguments in <code>null</code>,
+	 * the union of results from relevant statement sources is constructed.
+	 * 
+	 * @param subj
+	 * @param pred
+	 * @param obj
+	 * @param contexts
+	 * @return
+	 * 
+	 * @throws RepositoryException
+	 * @throws MalformedQueryException
+	 * @throws QueryEvaluationException
+	 */
+	public CloseableIteration<Statement, QueryEvaluationException> getStatements(QueryInfo queryInfo, Resource subj, URI pred, Value obj, Resource... contexts) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
 
 		if (contexts.length!=0)
 			log.warn("Context queries are not yet supported by FedX.");
@@ -211,127 +238,190 @@ public abstract class FederationEvalStrategy extends EvaluationStrategyImpl
 	}
 	
 	
-  public CloseableIteration<BindingSet, QueryEvaluationException> evaluateService(FedXService service, BindingSet bindings)
-    throws QueryEvaluationException
-  {
-    ParallelServiceExecutor pe = new ParallelServiceExecutor(service, this, bindings);
-    pe.run();
-    return pe;
-  }
+	public CloseableIteration<BindingSet, QueryEvaluationException> evaluateService(FedXService service, BindingSet bindings) throws QueryEvaluationException {
+		
+		ParallelServiceExecutor pe = new ParallelServiceExecutor(service, this, bindings);
+		pe.run();		// non-blocking (blocking happens in the iterator)
+		return pe;
+	}
+	
+	
+	public CloseableIteration<BindingSet, QueryEvaluationException> evaluateSingleSourceQuery(SingleSourceQuery query, BindingSet bindings) throws QueryEvaluationException {
+		
+		try
+		{
+			Endpoint source = query.getSource();		
+			return source.getTripleSource().getStatements(query.getQueryString(), source.getConn(), query.getQueryInfo().getQueryType());
+		} catch (RepositoryException e) {
+			throw new QueryEvaluationException(e);
+		} catch (MalformedQueryException e)	{
+			throw new QueryEvaluationException(e);
+		}
+		
+	}
+	
+	public CloseableIteration<BindingSet, QueryEvaluationException> evaluateNJoin(NJoin join, BindingSet bindings) throws QueryEvaluationException {
+		
+		CloseableIteration<BindingSet, QueryEvaluationException> result = evaluate(join.getArg(0), bindings);
+		
+		ControlledWorkerScheduler<BindingSet> joinScheduler = FederationManager.getInstance().getJoinScheduler();
+		
+		for (int i = 1, n = join.getNumberOfArguments(); i < n; i++) {
+			result = executeJoin(joinScheduler, result, join.getArg(i), bindings, join.getQueryInfo());
+		}
+		return result;
+	}
+	
+	public CloseableIteration<BindingSet, QueryEvaluationException> evaluateNaryUnion(NUnion union, BindingSet bindings) throws QueryEvaluationException {
+		
+		ControlledWorkerScheduler<BindingSet> unionScheduler = FederationManager.getInstance().getUnionScheduler();
+		ControlledWorkerUnion<BindingSet> unionRunnable = new ControlledWorkerUnion<BindingSet>(unionScheduler, union.getQueryInfo());
+		
+		for (int i=0; i<union.getNumberOfArguments(); i++) {
+			unionRunnable.addTask(new ParallelUnionOperatorTask(unionRunnable, this, union.getArg(i), bindings));
+		}
+		
+		executor.execute(unionRunnable);
+		
+		return unionRunnable;
+	}
 
-  public CloseableIteration<BindingSet, QueryEvaluationException> evaluateSingleSourceQuery(SingleSourceQuery query, BindingSet bindings)
-    throws QueryEvaluationException
-  {
-    try
-    {
-      Endpoint source = query.getSource();
-      return source.getTripleSource().getStatements(query.getQueryString(), source.getConn(), query.getQueryInfo().getQueryType());
-    } catch (RepositoryException e) {
-      throw new QueryEvaluationException(e);
-    } catch (MalformedQueryException e) {
-      throw new QueryEvaluationException(e);
-    }
-  }
+	/**
+	 * Execute the join in a separate thread using some join executor. 
+	 * 
+	 * Join executors are for instance:
+	 * 	- {@link SynchronousJoin}
+	 *  - {@link SynchronousBoundJoin}
+	 *  - {@link ControlledWorkerJoin}
+	 *  - {@link ControlledWorkerBoundJoin}
+	 *
+	 * For endpoint federation use controlled worker bound join, for local federation use
+	 * controlled worker join. The other operators are there for completeness.
+	 * 
+	 * Use {@link FederationEvalStrategy#executor} to execute the join (it is a runnable).
+	 * 
+	 * @param joinScheduler
+	 * @param leftIter
+	 * @param rightArg
+	 * @param bindings
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	protected abstract CloseableIteration<BindingSet, QueryEvaluationException> executeJoin(ControlledWorkerScheduler<BindingSet> joinScheduler, CloseableIteration<BindingSet, QueryEvaluationException> leftIter, TupleExpr rightArg, BindingSet bindings, QueryInfo queryInfo) throws QueryEvaluationException;
+	
+	
+	
+	public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateExclusiveGroup(ExclusiveGroup group, RepositoryConnection conn, TripleSource tripleSource, BindingSet bindings) throws RepositoryException, MalformedQueryException, QueryEvaluationException;
 
- 
-  public CloseableIteration<BindingSet, QueryEvaluationException> evaluateNaryUnion(NUnion union, BindingSet bindings)
-    throws QueryEvaluationException
-  {
-    ControlledWorkerScheduler unionScheduler = FederationManager.getInstance().getUnionScheduler();
-    ControlledWorkerUnion unionRunnable = new ControlledWorkerUnion(unionScheduler, union.getQueryInfo());
-
-    for (int i = 0; i < union.getNumberOfArguments(); i++) {
-      unionRunnable.addTask(new ParallelUnionOperatorTask(unionRunnable, this, union.getArg(i), bindings));
-    }
-
-    this.executor.execute(unionRunnable);
-
-    return unionRunnable;
-  }
-
-  public abstract CloseableIteration<BindingSet, QueryEvaluationException> executeJoin(ControlledWorkerScheduler<BindingSet> paramControlledWorkerScheduler, CloseableIteration<BindingSet, QueryEvaluationException> paramCloseableIteration, TupleExpr paramTupleExpr, BindingSet paramBindingSet, QueryInfo paramQueryInfo)
-    throws QueryEvaluationException;
-
-  public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateExclusiveGroup(ExclusiveGroup paramExclusiveGroup, RepositoryConnection paramRepositoryConnection, TripleSource paramTripleSource, BindingSet paramBindingSet)
-    throws RepositoryException, MalformedQueryException, QueryEvaluationException;
-
-  public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateBoundJoinStatementPattern(StatementTupleExpr paramStatementTupleExpr, List<BindingSet> paramList)
-    throws QueryEvaluationException;
-
-  public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateGroupedCheck(CheckStatementPattern paramCheckStatementPattern, List<BindingSet> paramList)
-    throws QueryEvaluationException;
-
-  public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateIndependentJoinGroup(IndependentJoinGroup paramIndependentJoinGroup, BindingSet paramBindingSet)
-    throws QueryEvaluationException;
-
-  public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateIndependentJoinGroup(IndependentJoinGroup paramIndependentJoinGroup, List<BindingSet> paramList)
-    throws QueryEvaluationException;
-
-  public CloseableIteration<BindingSet, QueryEvaluationException> evaluateProjectionWithBindings(ProjectionWithBindings projection, BindingSet bindings)
-    throws QueryEvaluationException
-  {
-    QueryBindingSet actualBindings = new QueryBindingSet(bindings);
-    for (Binding b : projection.getAdditionalBindings())
-      actualBindings.addBinding(b);
-    return evaluate(projection, actualBindings);
-  }
-
-  public CloseableIteration<BindingSet, QueryEvaluationException> evaluateService(FedXService service, List<BindingSet> bindings)
-    throws QueryEvaluationException
-  {
-    return new ServiceJoinIterator(new CollectionIteration(bindings), service.getService(), EmptyBindingSet.getInstance(), this);
-  }
-
-  public Value evaluate(ValueExpr expr, BindingSet bindings) throws ValueExprEvaluationException, QueryEvaluationException
-  {
-    if ((expr instanceof FilterExpr))
-      return evaluate((FilterExpr)expr, bindings);
-    if ((expr instanceof ConjunctiveFilterExpr)) {
-      return evaluate((ConjunctiveFilterExpr)expr, bindings);
-    }
-    return super.evaluate(expr, bindings);
-  }
-
-  public Value evaluate(FilterExpr node, BindingSet bindings) throws ValueExprEvaluationException, QueryEvaluationException
-  {
-    Value v = evaluate(node.getExpression(), bindings);
-    return BooleanLiteralImpl.valueOf(QueryEvaluationUtil.getEffectiveBooleanValue(v));
-  }
-
-  public Value evaluate(ConjunctiveFilterExpr node, BindingSet bindings)
-    throws ValueExprEvaluationException, QueryEvaluationException
-  {
-    ValueExprEvaluationException error = null;
-
-    for (FilterExpr expr : node.getExpressions()) {
-      try
-      {
-        Value v = evaluate(expr.getExpression(), bindings);
-        if (!QueryEvaluationUtil.getEffectiveBooleanValue(v))
-          return BooleanLiteralImpl.FALSE;
-      }
-      catch (ValueExprEvaluationException e) {
-        error = e;
-      }
-    }
-
-    if (error != null) {
-      throw error;
-    }
-    return BooleanLiteralImpl.TRUE;
-  }
-
-  public CloseableIteration<BindingSet, QueryEvaluationException> evaluateAtStatementSources(Object preparedQuery, List<StatementSource> statementSources, QueryInfo queryInfo)
-    throws QueryEvaluationException
-  {
-    if ((preparedQuery instanceof String))
-      return evaluateAtStatementSources((String)preparedQuery, statementSources, queryInfo);
-    if ((preparedQuery instanceof TupleExpr))
-      return evaluateAtStatementSources((TupleExpr)preparedQuery, statementSources, queryInfo);
-    throw new RuntimeException("Unsupported type for prepared query: " + preparedQuery.getClass().getCanonicalName());
-  }
-
-  protected CloseableIteration<BindingSet, QueryEvaluationException> evaluateAtStatementSources(String preparedQuery, List<StatementSource> statementSources, QueryInfo queryInfo) throws QueryEvaluationException {
+	
+	
+	/**
+	 * Evaluate a bound join at the relevant endpoint, i.e. i.e. for a group of bindings retrieve
+	 * results for the bound statement from the relevant endpoints
+	 * 
+	 * @param stmt
+	 * @param bindings
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateBoundJoinStatementPattern(StatementTupleExpr stmt, final List<BindingSet> bindings) throws QueryEvaluationException;
+	
+	/**
+	 * Perform a grouped check at the relevant endpoints, i.e. for a group of bindings keep only 
+	 * those for which at least one endpoint provides a result to the bound statement.
+	 * 
+	 * @param stmt
+	 * @param bindings
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateGroupedCheck(CheckStatementPattern stmt, final List<BindingSet> bindings) throws QueryEvaluationException;
+	
+	
+	
+	public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateIndependentJoinGroup(IndependentJoinGroup joinGroup, final BindingSet bindings) throws QueryEvaluationException; 
+	
+	public abstract CloseableIteration<BindingSet, QueryEvaluationException> evaluateIndependentJoinGroup(IndependentJoinGroup joinGroup, final List<BindingSet> bindings) throws QueryEvaluationException;
+		
+	
+	/**
+	 * Evaluate a projection containing additional values, e.g. set from a filter expression
+	 * 
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	public CloseableIteration<BindingSet, QueryEvaluationException> evaluateProjectionWithBindings(ProjectionWithBindings projection, BindingSet bindings) throws QueryEvaluationException {
+		QueryBindingSet actualBindings = new QueryBindingSet(bindings);
+		for (Binding b : projection.getAdditionalBindings())
+			actualBindings.addBinding(b);
+		return evaluate((Projection)projection, actualBindings);
+	}
+	
+	/**
+	 * Evaluate a SERVICE using vectored evaluation, taking the provided bindings as input.
+	 * 
+	 * See {@link ControlledWorkerBoundJoin} and {@link Config#getEnableServiceAsBoundJoin()}
+	 * 
+	 * @param service
+	 * @param bindings
+	 * @return
+	 * @throws QueryEvaluationException
+	 */
+	public CloseableIteration<BindingSet, QueryEvaluationException> evaluateService(FedXService service, final List<BindingSet> bindings) throws QueryEvaluationException {
+		
+		return new ServiceJoinIterator(new CollectionIteration<BindingSet, QueryEvaluationException>(bindings), service.getService(), EmptyBindingSet.getInstance(), this);
+	}
+	
+	public Value evaluate(ValueExpr expr, BindingSet bindings) throws ValueExprEvaluationException, QueryEvaluationException {
+		
+		if (expr instanceof FilterExpr)
+			return evaluate((FilterExpr)expr, bindings);
+		if (expr instanceof ConjunctiveFilterExpr)
+			return evaluate((ConjunctiveFilterExpr)expr, bindings);
+		
+		return super.evaluate(expr, bindings);
+	}
+	
+	public Value evaluate(FilterExpr node, BindingSet bindings) throws ValueExprEvaluationException, QueryEvaluationException {
+		
+		Value v = evaluate(node.getExpression(), bindings);
+		return BooleanLiteralImpl.valueOf(QueryEvaluationUtil.getEffectiveBooleanValue(v));
+	}
+	
+	
+	public Value evaluate(ConjunctiveFilterExpr node, BindingSet bindings) throws ValueExprEvaluationException, QueryEvaluationException {
+		
+		ValueExprEvaluationException error = null;
+		
+		for (FilterExpr expr : node.getExpressions()) {
+			
+			try {
+				Value v = evaluate(expr.getExpression(), bindings);
+				if (QueryEvaluationUtil.getEffectiveBooleanValue(v) == false) {
+					return BooleanLiteralImpl.FALSE;
+				}
+			} catch (ValueExprEvaluationException e) {
+				error = e;
+			}
+		}
+		
+		if (error!=null)
+			throw error;
+		
+		return BooleanLiteralImpl.TRUE;
+	}
+	
+	
+	
+	protected CloseableIteration<BindingSet, QueryEvaluationException> evaluateAtStatementSources(Object preparedQuery, List<StatementSource> statementSources, QueryInfo queryInfo) throws QueryEvaluationException {
+		if (preparedQuery instanceof String)
+			return evaluateAtStatementSources((String)preparedQuery, statementSources, queryInfo);
+		if (preparedQuery instanceof TupleExpr)
+			return evaluateAtStatementSources((TupleExpr)preparedQuery, statementSources, queryInfo);
+		throw new RuntimeException("Unsupported type for prepared query: " + preparedQuery.getClass().getCanonicalName());
+	}
+	
+	protected CloseableIteration<BindingSet, QueryEvaluationException> evaluateAtStatementSources(String preparedQuery, List<StatementSource> statementSources, QueryInfo queryInfo) throws QueryEvaluationException {
 		
 		try {
 			CloseableIteration<BindingSet, QueryEvaluationException> result;
@@ -356,7 +446,6 @@ public abstract class FederationEvalStrategy extends EvaluationStrategyImpl
 				union.run();				
 				result = union;
 				
-				
 				// TODO we should add some DISTINCT here to have SET semantics
 			}
 		
@@ -368,7 +457,7 @@ public abstract class FederationEvalStrategy extends EvaluationStrategyImpl
 	}
 	
 	
-  protected CloseableIteration<BindingSet, QueryEvaluationException> evaluateAtStatementSources(TupleExpr preparedQuery, List<StatementSource> statementSources, QueryInfo queryInfo) throws QueryEvaluationException {
+	protected CloseableIteration<BindingSet, QueryEvaluationException> evaluateAtStatementSources(TupleExpr preparedQuery, List<StatementSource> statementSources, QueryInfo queryInfo) throws QueryEvaluationException {
 		
 		try {
 			CloseableIteration<BindingSet, QueryEvaluationException> result;
@@ -402,170 +491,5 @@ public abstract class FederationEvalStrategy extends EvaluationStrategyImpl
 			throw new QueryEvaluationException(e);
 		}
 	}
-  
-  private Pair findMinumCostfromAllTriplePattern(List<TupleExpr> tupleExpr, CloseableIteration<BindingSet, QueryEvaluationException> preResultIter)
-    throws Exception
-  {
-    List preResult = new ArrayList();
 
-    while ((preResultIter != null) && (preResultIter.hasNext()))
-      preResult.add((BindingSet)preResultIter.next());
-    CloseableIteration clone = new QueryResultIter(preResult);
-    long minmum = Long.MAX_VALUE;
-    int index = 0;
-
-    int heuristicNum = 3;
-
-    int size = 0;
-
-    size = preResult.size();
-
-    long temp = Long.MAX_VALUE;
-
-    for (int i = 0; i < tupleExpr.size(); i++)
-    {
-      TupleExpr exp = (TupleExpr)tupleExpr.get(i);
-      String countQuery = constructCountQuery(exp, preResult, heuristicNum);
-      System.out.println("countQuery:" + countQuery);
-      log.info("countQuery:" + countQuery);
-      temp = evaluateCountQuery(exp, countQuery, size, heuristicNum);
-      if (temp < minmum) {
-        minmum = temp;
-        index = i;
-      }
-      log.info(" countQuery result:" + temp);
-    }
-
-    return new Pair(index, clone);
-  }
-
-
-  private long evaluateCountQuery(TupleExpr exp, String countQuery, int size, int heuristicNum)
-    throws Exception
-  {
-    CloseableIteration result = null;
-  
-    long value = Integer.MAX_VALUE;
-
-    if ((exp instanceof ExclusiveGroup))
-    {
-      StatementSource source = ((ExclusiveGroup)exp).getOwner();
-      String endpointID = source.getEndpointID();
-      Endpoint endpoint = EndpointManager.getEndpointManager().getEndpoint(endpointID);
-      result = endpoint.getTripleSource().getStatements(countQuery, endpoint.getConn(), QueryType.SELECT);
-      BindingSet binding = (BindingSet)result.next();
-      result.close();
-      value = Integer.parseInt(binding.getValue("count").stringValue());
-      //value = Integer.parseInt(binding.getValue("callret-0").stringValue());
-      return value;
-    }
-
-    QueryInfo qInfo = new QueryInfo(countQuery, QueryType.SELECT);
-    List sources = ((FedXStatementPattern)exp).getStatementSources();
-    result = evaluateAtStatementSources(countQuery, sources, qInfo);
-    long sum=0;
-    if(result.hasNext()){
-    while(result.hasNext()){
-    BindingSet binding = (BindingSet)result.next();
-    String temp=binding.getValue("count").stringValue();
-    if (temp.length()>9) 
-    	 sum = sum+Integer.MAX_VALUE;
-    else
-       sum = sum+Integer.parseInt(temp);
-    }
-    value=sum;
-    }  
-    result.close();   
-    return value;
-  }
-
-  private String constructCountQuery(TupleExpr tupleExpr, List<BindingSet> preResult, int heuristicNum)
-    throws IllegalQueryException
-  {
-    List temp = new ArrayList();
-
-    if (preResult != null) {
-      int size = preResult.size();
-
-      if ((heuristicNum == 0) || (heuristicNum >= size)) {
-        temp.addAll(preResult);
-      } else {
-        int dis = size / heuristicNum;
-        for (int i = 0; i < heuristicNum; i++) {
-          temp.add((BindingSet)preResult.get(i * dis));
-        }
-
-      }
-
-    }
-
-    String countString = QueryStringUtil.selectCountQueryString(tupleExpr, temp, null, Boolean.valueOf(false));
-
-    return countString;
-  }
- 
-		  public CloseableIteration<BindingSet, QueryEvaluationException> evaluateNJoin(NJoin join, BindingSet bindings) throws Exception {
-		    long start = 0L;
-		    long eclipsed = 0L;
-		    long sum = 0L;
-
-		    boolean isJoin = false;
-		     ControlledWorkerScheduler joinScheduler;
-		     CloseableIteration<BindingSet, QueryEvaluationException> clone;
-		     CloseableIteration<BindingSet, QueryEvaluationException> preResult = null;
-		    List temp = null;
-		    joinScheduler = FederationManager.getInstance().getJoinScheduler();
-		    List tupleExpr = join.getArgs();
-		    while (!tupleExpr.isEmpty())
-		    {
-		      int minIndex = 0;
-		      start = System.currentTimeMillis();
-		      clone = null;
-		      Pair pair = null;
-		      if (tupleExpr.size()>1) {
-		        pair = findMinumCostfromAllTriplePattern(tupleExpr, preResult);
-		        minIndex = pair.index;
-		        clone = pair.clone; } 
-                      else {
-		        clone = preResult;
-		      }eclipsed = System.currentTimeMillis() - start;
-		      sum += eclipsed;
-
-		      TupleExpr curExpr = (TupleExpr)tupleExpr.get(minIndex);
-		      System.out.println("The evaluated pattern:" + curExpr);
-
-		      log.info("The evaluated pattern:" + curExpr);
-		      
-		      if(!isJoin)
-		      {
-		      preResult = evaluate(curExpr, bindings);
-		      isJoin=true;
-		      }
-		      else
-		      preResult = executeJoin(joinScheduler, clone, curExpr, bindings, join.getQueryInfo());
-
-		      tupleExpr.remove(minIndex);
-
-		      tupleExpr = join.getArgs();
-		    }
-
-		    this.optimizationEclipse = sum;
-		    log.info("Optimization2 duration(ms): " + this.optimizationEclipse);
-		    System.out.println("Optimization2 duration(ms): " + this.optimizationEclipse);
-
-		    return preResult;
-		  }
-	
-	
-  private class Pair
-  {
-    int index;
-    CloseableIteration<BindingSet, QueryEvaluationException> clone;
-
-    Pair(int index, CloseableIteration<BindingSet, QueryEvaluationException>  clone)
-    {
-      this.index = index;
-      this.clone = clone;
-    }
-  }
 }
