@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+       <title>Federated query service DynaJoin</title>
+        <link href="assets/application.css" 
+              media="all" rel="stylesheet" type="text/css" />
+        <link href="assets/jquery.dataTables.min.css" 
+              media="all" rel="stylesheet" type="text/css" />
+        <script src="assets/application.js" type="text/javascript"></script>
+         <script src="assets/example.js" type="text/javascript"></script>      
+        <script src="assets/query.js" type="text/javascript"></script>        
+        <script src="assets/jquery-1.11.3.min.js" type="text/javascript"></script>
+        <script src="assets/jquery.dataTables.min.js" type="text/javascript"></script>
+    </head>
+    <body>
+         <div id="header" class="top col-1-2">
+         
+            <div class="title">DynaJoin SPARQL Interface</div>
+            <div class="subtitle">Federated query service via SPARQL endpoints</div>
+         </div>
+            
+            <div id="nav" class="top col-1-2">
+                
+            
+               <a href="index.jsp">Home</a>|
+                <a href="documentation.html">Documentation</a> |
+                <a href="data.html">Data</a> |
+            
+            </div>
+        
+         
+        <div class="mainBody">
+            <h2> Benchmark</h2>
+            <h3>Query</h3>
+            Q1: Find out the gene resource related to &quot;ADRAR&quot;.
+            <p>
+                
+select ?gene ?p
+where{
+?gene &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.
+?gene ?p &quot;ADRAR&quot;^^&lt;http://www.w3.org/2001/XMLSchema#string&gt;
+}
+</p>
+ <p>  Q2: Find out the genes related to diabetes.</p>
+<p> select ?gene ?o1 ?o2  where{ 
+?gene &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.
+?gene &lt;http://bio2rdf.org/omim_vocabulary:refers-to&gt; ?o1. 
+?o1   ?p2 ?o2.
+&lt;http://bio2rdf.org/pharmgkb:PA446359&gt; &lt;http://bio2rdf.org/pharmgkb_vocabulary:x-snomedct&gt; ?o2 }</p>
+<p> Q3: Find out the genes related to diabetes.</p>
+<p> select ?gene ?o1 ?o2 where{ 
+?gene &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.
+?gene ?p1 ?o1. 
+?o1   &lt;http://bio2rdf.org/omim_vocabulary:x-snomed&gt;  ?o2.
+&lt;http://bio2rdf.org/pharmgkb:PA446359&gt; &lt;http://bio2rdf.org/pharmgkb_vocabulary:x-snomedct&gt; ?o2 }
+<p> Q4: Find the genes related to diabetes.
+<p> select ?gene ?o1 ?o2 where{ 
+?gene &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://bio2rdf.org/omim_vocabulary:Gene&gt;.
+?gene ?p1 ?o1. 
+?o1   ?p2 ?o2.
+&lt;http://bio2rdf.org/pharmgkb:PA446359&gt; &lt;http://bio2rdf.org/pharmgkb_vocabulary:x-snomedct&gt; ?o2}</p>
+<p> Q5: Find out the generic name ,title, side effect for all the anti-allergic agents.</p>							
+<p> select * where{					
+?drug &lt;http://bio2rdf.org/sider_vocabulary:generic-name&gt; ?generic.					
+?drug &lt;http://purl.org/dc/terms/:title&gt; ?drug_name .					
+?drug &lt;http://bio2rdf.org/sider_vocabulary:side-effect&gt; ?side.					
+?drug &lt;http://bio2rdf.org/sider_vocabulary:pubchem-flat-compound-id&gt; ?cpd.					
+?generic &lt;http://purl.org/dc/terms/title&gt; ?generic_name.					
+?side &lt;http://purl.org/dc/terms/title&gt; ?side_effect.										
+?drug_drugbank &lt;http://bio2rdf.org/drugbank_vocabulary:category&gt;
+&lt;http://bio2rdf.org/drugbank_vocabulary:Anti-Allergic-Agents&gt;.					
+?drug_drugbank &lt;http://bio2rdf.org/drugbank_vocabulary:x-pubchemcompound&gt; ?cpd	}</p>
+<p> Q6: Find out the clinical phenotype features, general and specific functions, and omim articles about F8 gene.</p>
+<p> select * where {
+?s &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; &lt;http://bio2rdf.org/omim_vocabulary:Phenotype&gt; .
+?s &lt;http://www.w3.org/2000/01/rdf-schema#label&gt; ?o.
+?s &lt;http://bio2rdf.org/omim_vocabulary:clinical-features&gt; ?clinicFeature.
+?s &lt;http://bio2rdf.org/omim_vocabulary:article&gt; ?article.
+?s &lt;http://bio2rdf.org/omim_vocabulary:x-uniprot&gt; ?protein.
+?drug  &lt;http://bio2rdf.org/drugbank_vocabulary:gene-name&gt; &quot;F8&quot;^^&lt;http://www.w3.org/2001/XMLSchema#string&gt;.
+?drug &lt;http://bio2rdf.org/drugbank_vocabulary:x-uniprot&gt; ?protein.
+?drug  &lt;http://bio2rdf.org/drugbank_vocabulary:general-function&gt; ?genFunction.
+?drug  &lt;http://bio2rdf.org/drugbank_vocabulary:specific-function&gt; ?speFunction }</p>
+<p> Q7: Find out all the drugs, which are substrate of some enzyme, their category and reaction.</p>
+<p> select * where {  
+?enzyme &lt;http://bio2rdf.org/kegg_vocabulary:substrate&gt; ?cpd.
+?enzyme &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; &lt;http://bio2rdf.org/kegg_vocabulary:Enzyme&gt;. 
+?reaction &lt;http://bio2rdf.org/kegg_vocabulary:enzyme&gt;  ?enzyme. 
+?drug    &lt;http://bio2rdf.org/drugbank_vocabulary:category&gt; ?category. 
+?drug &lt;http://purl.org/dc/terms:description&gt; ?desc.
+?drug &lt;http://bio2rdf.org/drugbank_vocabulary:x-kegg&gt; ?cpd }</p>
+<p> Q8: Find out the side effect and pathway of all the anticonvulsants medicine.</p>
+<p> select * where{
+?s1 &lt;http://bio2rdf.org/drugbank_vocabulary:category&gt;
+&lt;http://bio2rdf.org/drugbank_vocabulary:Anticonvulsants&gt;.
+?s1 &lt;http://bio2rdf.org/drugbank_vocabulary:affected-organism&gt; ?affected.
+?s1 &lt;http://bio2rdf.org/drugbank_vocabulary:x-pubchemcompound&gt; ?cpd.
+?drug &lt;http://bio2rdf.org/sider_vocabulary:side-effect&gt; ?side.
+?drug &lt;http://bio2rdf.org/sider_vocabulary:pubchem-flat-compound-id&gt; ?cpd.
+?side &lt;http://purl.org/dc/terms/title&gt; ?side_effect.
+?s2 &lt;http://bio2rdf.org/kegg_vocabulary:x-pubchem.compound&gt; ?cpd.
+?s2 &lt;http://bio2rdf.org/kegg_vocabulary:pathway&gt;  ?pathway } </p>        
+       
+        <h3>Endpoint list</h3>
+        <ul>
+            
+        <li>Drugbank:	http://cu.kegg.bio2rdf.org/sparql</li>
+			<li>OMIM:http://cu.drugbank.bio2rdf.org/sparql</li>
+			<li>SIDER:	http://cu.pharmgbk.bio2rdf.org/sparql</li> 
+			<li>KEGG:	http://cu.sider.bio2rdf.org/sparql</li>
+			<li>PharmGKB:	http://cu.omim.bio2rdf.org/sparql </li>
+                        </ul>
+        
+        </div>
+    </body>
+</html>

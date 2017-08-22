@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+       <title>Federated query service DynaJoin</title>
+        <link href="assets/application.css" 
+              media="all" rel="stylesheet" type="text/css" />
+        <link href="assets/jquery.dataTables.min.css" 
+              media="all" rel="stylesheet" type="text/css" />
+        <script src="assets/application.js" type="text/javascript"></script>
+         <script src="assets/example.js" type="text/javascript"></script>      
+        <script src="assets/query.js" type="text/javascript"></script>        
+        <script src="assets/jquery-1.11.3.min.js" type="text/javascript"></script>
+        <script src="assets/jquery.dataTables.min.js" type="text/javascript"></script>
+    </head>
+    <body>
+         <div id="header" class="top col-1-2">
+         
+            <div class="title">DynaJoin SPARQL Interface</div>
+            <div class="subtitle">Federated query service via SPARQL endpoints</div>
+         </div>
+            
+            <div id="nav" class="top col-1-2">
+                
+            <a href="index.jsp">Home</a>|
+                <a href="documentation.html">Documentation</a> |
+                <a href="data.html">Data</a> |
+                 
+            
+            </div>
+        
+         
+        <div class="mainBody">
+          
+            <h2> Reference</h2>
+            <h2> Implementation</h2>
+           <p> This service is to present a federated query for the distributed RDF data.</p>
+                 
+           <p>The system is currently implemented:</p>
+           
+           <ul>
+            <li>utilizing intermediate results obtained during previous search to dynamically optimize SPARQL query join order </li>
+            <li>currently query the 35 datasets in the Bio2RDF projects
+            <li> implemented based on <a href="http://www.fluidops.com/en/company/training/open_source">FedX System </a></li>
+            <li>is open source <a href="https://github.com/rainy5/DynaJoin">github</a></li>
+            </ul>
+           
+            <h2>Service characteristics</h2>
+            <p>
+                 During a federated query, each data source may
+pose a non-trivial size of search space. Therefore, finding the optimal join
+order to suppress the sizes of intermediate results from different sources
+is the key for the performance of a federated query system.
+Here we
+presents a dynamic optimization approach for join order, which can find
+more optimized join plan compared to static optimization approaches.</p>
+
+        </div>
+    </body>
+</html>
